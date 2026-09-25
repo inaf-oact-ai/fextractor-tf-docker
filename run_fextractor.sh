@@ -33,12 +33,12 @@ if [ "$NARGS" -lt 1 ]; then
 	echo ""
 	
 	echo "=== DATA PRE-PROCESSING OPTIONS ==="
-	echo "--profile=[PROFILE] - Image normalization profile config {default, simclr_radio}. Preprocessing options can be overridden with options below. Default: simclr_radio"
+	echo "--preproc-profile=[PROFILE] - Image normalization profile config {default, simclr_radio}. Preprocessing options can be overridden with options below. Default: simclr_radio"
 	echo "--norm-min=[NORM_MIN] - MinMax normalization min value. Default: 0.0"
 	echo "--norm-max=[NORM_MAX] - MinMax normalization max value. Default: 1.0"
 	echo "--imgsize=[IMGSIZE] - Image resize size in pixels. Default: 224 "
-	echo "--in-chans=[IN_CHANS] - Number of channels expected in input image. Default: 1"
-	echo "--clip-data - Apply sigma clipping to image with clipping threshold [5,30] sigma. Default: not applied"
+	echo "--nchannels=[IN_CHANS] - Number of channels expected in input image. Default: 1"
+	echo "--clipdata - Clip image pixel value in range [mean-5*stddev, mean+30*stddev]. Default: not applied"
 	echo "--zscale - Apply zscale stretching to image. Enabled by default with profile=simclr_radio"
 	echo "--no-zscale - Disable zscale stretching to image."
 	echo "--zscale-contrast=[ZSCALE_CONTRAST] - Contrast used for zscale stretching. Default: 0.25"
@@ -87,7 +87,7 @@ MODEL="simclr_radio"
 BACKEND="tensorflow"
 
 # - Data pre-processing options
-PROFILE="simclr_radio"
+PREPROC_PROFILE="simclr_radio"
 IMGSIZE=224
 IN_CHANS=1
 NORM_MIN=0.0
@@ -126,8 +126,8 @@ do
     ;;
 		
 		# - PREPROC OPTIONS
-		--profile=*)
-    	PROFILE=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
+		--preproc-profile=*)
+    	PREPROC_PROFILE=`echo $item | sed 's/[-a-zA-Z0-9]*=//'`
     ;;
     --norm-min=*)
     	NORM_MIN=`echo $item | /bin/sed 's/[-a-zA-Z0-9]*=//'`
@@ -138,12 +138,13 @@ do
     --imgsize=*)
     	IMGSIZE=`echo $item | /bin/sed 's/[-a-zA-Z0-9]*=//'`
     ;;
-    --in-chans=*)
+    --nchannels=*)
     	IN_CHANS=`echo $item | /bin/sed 's/[-a-zA-Z0-9]*=//'`
     ;;
-		--clip-data)
+		--clipdata)
 			CLIP_DATA="--clip-data"
 		;;
+		# NB: Put this before --zscale otherwise the --zscale matches also the --zscale-contrasts
     --zscale-contrast=*)
 			ZSCALE_CONTRAST=`echo $item | /bin/sed 's/[-a-zA-Z0-9]*=//'`
 		;;
@@ -216,7 +217,7 @@ fi
 #######################################
 INPUT_OPTS="--inputfile=$INPUTFILE --datalist-key=$DATALIST_KEY "
 
-PREPROC_OPTS="--profile=$PROFILE \
+PREPROC_OPTS="--profile=$PREPROC_PROFILE \
 --imgsize=$IMGSIZE \
 --in-chans=$IN_CHANS \
 --norm-min=$NORM_MIN \
