@@ -29,15 +29,16 @@ if [ "$NARGS" -lt 1 ]; then
 	echo ""
 	
 	echo "=== MODEL OPTIONS ==="
-	echo "--model=[MODEL] - Model to be used for extracting the embedding. Avilable: {'simclr_radio'}. Default: 'simclr_radio'"
+	echo "--model=[MODEL] - Model to be used for extracting the embedding. Available: {'simclr_radio'}. Default: 'simclr_radio'"
 	echo ""
 	
 	echo "=== DATA PRE-PROCESSING OPTIONS ==="
-	echo "--preproc-profile=[PROFILE] - Image normalization profile config {default, simclr_radio}. Preprocessing options can be overridden with options below. Default: simclr_radio"
+	echo "--preproc-profile=[PROFILE] - Scientific image preprocessing profile {default, simclr_radio}. Preprocessing options below override profile settings. Default: default"
 	echo "--norm-min=[NORM_MIN] - MinMax normalization min value. Default: 0.0"
 	echo "--norm-max=[NORM_MAX] - MinMax normalization max value. Default: 1.0"
-	echo "--imgsize=[IMGSIZE] - Image resize size in pixels. Default: 224 "
-	echo "--nchannels=[IN_CHANS] - Number of channels expected in input image. Default: 1"
+	echo "--imgsize=[IMGSIZE] - Override model input image size in pixels. If omitted, the backend/model default is used."
+	echo "--nchannels=[IN_CHANS] - Override number of model input channels. If omitted, the backend/model default is used."
+	echo "  TensorFlow/SimCLR defaults to imgsize=224 and nchannels=1 when not overridden."
 	echo "--clipdata - Clip image pixel value in range [mean-5*stddev, mean+30*stddev]. Default: not applied"
 	echo "--zscale - Apply zscale stretching to image. Enabled by default with profile=simclr_radio"
 	echo "--no-zscale - Disable zscale stretching to image."
@@ -86,16 +87,19 @@ DATALIST_KEY="data"
 MODEL="simclr_radio"
 BACKEND="tensorflow"
 
-# - Data pre-processing options
-PREPROC_PROFILE="simclr_radio"
-IMGSIZE=224
-IN_CHANS=1
+# - Shared scientific preprocessing defaults
+PREPROC_PROFILE="default"
 NORM_MIN=0.0
 NORM_MAX=1.0
+ZSCALE_CONTRAST=0.25
+
 CLIP_DATA=""
 ZSCALE_STRETCH=""
-ZSCALE_CONTRAST=0.25
 ZERO_TO_MIN_OPT=""
+
+# - Model-specific input overrides
+IMGSIZE=""
+IN_CHANS=""
 
 # - Save options
 OUTFILE="fextractor_results.json"
@@ -218,14 +222,20 @@ fi
 INPUT_OPTS="--inputfile=$INPUTFILE --datalist-key=$DATALIST_KEY "
 
 PREPROC_OPTS="--profile=$PREPROC_PROFILE \
---imgsize=$IMGSIZE \
---in-chans=$IN_CHANS \
 --norm-min=$NORM_MIN \
 --norm-max=$NORM_MAX \
-$ZSCALE_STRETCH \
 --zscale-contrast=$ZSCALE_CONTRAST \
+$ZSCALE_STRETCH \
 $CLIP_DATA \
 $ZERO_TO_MIN_OPT "
+
+if [ "$IMGSIZE" != "" ]; then
+	PREPROC_OPTS="$PREPROC_OPTS --imgsize=$IMGSIZE "
+fi
+
+if [ "$IN_CHANS" != "" ]; then
+	PREPROC_OPTS="$PREPROC_OPTS --in-chans=$IN_CHANS "
+fi
 
 SAVE_OPTS="--outfile=$OUTFILE "
 
